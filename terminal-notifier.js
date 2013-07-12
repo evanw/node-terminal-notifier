@@ -1,4 +1,6 @@
 var child_process = require('child_process');
+var os = require('os');
+var fs = require('fs');
 
 /**
  * options.title     The notification title. Defaults to ‘Terminal’.
@@ -16,5 +18,34 @@ module.exports = function(message, options) {
   Object.keys(options).map(function(key) {
     args = args.concat('-' + key, options[key]);
   });
-  child_process.spawn(__dirname + '/terminal-notifier.app/Contents/MacOS/terminal-notifier', args);
+
+  // Copy the app to attempt to to work around an OS X bug that says
+  // 'You can't open the application "terminal-notifier.app" because
+  // it may be damaged or incomplete.'
+  var app = __dirname + '/terminal-notifier.app';
+  var temp = os.tmpDir() + '/' + Math.random().toString(36).slice(2) + '.app';
+  child_process.spawn('cp', ['-r', app, temp]).on('close', function() {
+    child_process.spawn(temp + '/Contents/MacOS/terminal-notifier', args).on('close', function() {
+      child_process.spawn('rm', ['-fr', temp]);
+    });
+  });
 };
+
+// Also work as a command-line program
+if (require.main === module) {
+  var args = process.argv.slice(2);
+  var message = '';
+  var options = {};
+  while (args.length > 0) {
+    switch (args.shift()) {
+      case '-message': message = args.shift(); break;
+      case '-title': options.title = args.shift(); break;
+      case '-subtitle': options.subtitle = args.shift(); break;
+      case '-group': options.group = args.shift(); break;
+      case '-activate': options.activate = args.shift(); break;
+      case '-open': options.open = args.shift(); break;
+      case '-execute': options.execute = args.shift(); break;
+    }
+  }
+  module.exports(message, options);
+}
