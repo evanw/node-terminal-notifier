@@ -22,6 +22,12 @@ module.exports = function(message, options) {
   // Copy the app to attempt to to work around an OS X bug that says
   // 'You can't open the application "terminal-notifier.app" because
   // it may be damaged or incomplete.'
+  //
+  // This hack will only work if the user has the terminal-notifier
+  // library present somewhere in their home directory. For example,
+  // 'cd ~/Library && npm install terminal-notifier' works. I have
+  // no idea what the Apple engineers were smoking when they designed
+  // the notification system but this hack is working for me so far.
   var app = __dirname + '/terminal-notifier.app';
   var temp = os.tmpDir() + '/' + Math.random().toString(36).slice(2) + '.app';
   child_process.spawn('cp', ['-r', app, temp]).on('close', function() {
